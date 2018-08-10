@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package fourier_transform;
 
 import java.awt.Canvas;
@@ -11,15 +6,17 @@ import java.awt.Graphics;
 import javax.swing.JFrame;
 /**
  *
- * @author Daniel
+ * @author Daniel Marzari
  */
 public class Main extends Canvas{
     static fourierTransform ft = new fourierTransform();
     static fourierSettings fs = new fourierSettings();
-    sampleWave sw = new sampleWave(fs.frequencies, fs.amplitudes, fs.phase, fs.sampleRate, fs.graphRateMultiplyer);
+    
+    sampleWave sw = new sampleWave(fs.frequencies, fs.amplitudes, fs.phases, fs.sampleRate, fs.graphRateMultiplyer);
     
     double[][] values = ft.fourierTransform(fs, sw);
-    int currentX, currentY, nextX, nextY;;
+    int currentX, currentY, nextX, nextY;
+    boolean done = false;
     /**
      * @param args the command line arguments
      */
@@ -35,9 +32,21 @@ public class Main extends Canvas{
     }
     
     public void paint(Graphics g) {
+        if(!done){
+            done = true;
+            playSounds();
+        }
         drawBoarder(g);
         drawFourier(g);
         drawFunction(g);
+    }
+    
+    public void playSounds(){
+        Thread[] threads = new Thread[fs.frequencies.length];
+        for(int i = 0; i < threads.length; i++){
+            threads[i] = new Thread(new soundThread(fs.frequencies[i], fs.amplitudes[i], fs.phases[i], fs.audioDuration));
+            threads[i].start();
+        }
     }
     
     public void drawBoarder(Graphics g){
@@ -55,9 +64,15 @@ public class Main extends Canvas{
             currentY = 10 + (150 - (int) Math.floor(values[2][i] * scaleY));
             g.setColor(Color.GREEN);
             g.drawLine(currentX, 160, currentX, currentY);
-            if(values[2][i] >= 1){
+            if(values[2][i] >= .9){
                 g.setColor(Color.MAGENTA);
-                g.drawString(i + "", currentX - 5, 172);
+                g.drawString((i + fs.min_detectedFrequency) + "", (int)(currentX - Math.ceil(3 * Math.log10(i + fs.min_detectedFrequency))), 172);
+            }else if (i == 0){
+                g.setColor(Color.MAGENTA);
+                g.drawString(fs.min_detectedFrequency + "", (int)(currentX - Math.ceil(3 * Math.log10(i + fs.min_detectedFrequency))), 172);
+            }else if (i == values[2].length - 1){
+                g.setColor(Color.MAGENTA);
+                g.drawString(fs.max_detectedFrequency + "", (int)(currentX - Math.ceil(3 * Math.log10(i + fs.min_detectedFrequency))), 172);
             }
         }
     }
